@@ -1,0 +1,365 @@
+openapi: 3.0.3
+info:
+  title: ARGE specification for EED consumption data exchange.
+  version: "1.1"
+  description: |
+    English
+    =======
+
+    General Information
+    -------------------
+    As part of the EU Energy Efficiency Directive (EED), the ARGE HeiWaKo (www.arge-heiwako.de) publishes a web service
+    with which monthly consumption data for residential units can be retrieved at billing unit level from a
+    measuring service company (MSC).
+
+    This service is intended to enable the housing industry to provide users/residents with consumption information
+    during the year in their own IT systems as part of the EED.
+
+    The service can be implemented by any interested party in its software.
+
+    The server side is covered by the MSC.
+
+    The service was developed according to the criteria of security and minimum implementation costs.
+
+
+    Change Log
+    ----------
+
+    Version 1.1:
+    * Added benchmark
+    * Added flag for converted consumptions
+
+
+    Data Model
+    ----------
+    This API uses the following roles:
+    * MSC: The measuring service company providing the consumption data.
+    * PM: The property management as customer of the MSC respectively the software reading the consumption data.
+
+    Security
+    --------
+    The service is protected with basicAuth authentication and data must be transmitted on a secure channel (HTTPS/SSL).
+
+
+    Deutsch
+    =======
+
+    Allgemeine Informationen
+    ------------------------
+    Im Rahmen der Energieeffizienzrichtlinie der EU (EED) veröffentlicht die die ARGE HeiWaKo (www.arge-heiwako.de) eine
+    Schnittstelle, mit der monatliche Verbrauchsdaten auf Nutzeinheitenebene vom Messdienstleistern
+    (measuring service company, MSC) abgerufen werden können.
+
+    Diese Schnittstelle soll es der Wohnungswirtschaft ermöglichen, Nutzern/Bewohnern eine unterjährige Verbrauchsinformation
+    im Rahmen der EED in eigenen IT-Systemen bereitzustellen.
+
+    Die Serverseite wird von den Messdienstleistern bereitgestellt.
+
+    Der Service wurde nach den Kriterien Sicherheit und minimalem Implementierungsaufwand entwickelt.
+
+
+    Änderungen
+    ----------
+
+    Version 1.1:
+    * Benchmark hinzugefügt
+    * Kennzeichen für umgerechnete Verbräuche hinzugefügt (converted)
+
+
+    Datenmodell
+    -----------
+    Diese API verwendet die folgenden Rollen:
+        * MSC: Der Messdienstleister, der die Verbrauchsdaten zur Verfügung stellt.
+        * PM: Die Hausverwaltung als Kunde des MSC bzw. die Software, die die Verbrauchsdaten ausliest.
+
+    Sicherheit
+    ----------
+
+    Die Schnittstelle ist mit basicAuth-Verfahren gesichert.
+    Die Datenübertragung muss über einen sicheren Kanal erfolgen (HTTPS/SSL).
+paths:
+  /billingunits/{mscnumber}/consumptions/periods:
+    get:
+      summary: Get a summary of available consumption data sets for a billing unit.
+      description: |
+        This list contains the available consumption data sets for a billing unit.
+
+        The number of available data is subject to contractual agreement between PM and MSC.
+      tags:
+        - eed-consumption
+      operationId: getConsumptionSummary
+      security:
+        - basicAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/BillingUnitNumberMSC'
+        - $ref: '#/components/parameters/Year'
+      responses:
+        "200":
+          description: The consumption data overview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumptionSummary'
+        "401":
+          description: Authorization failure.
+        "403":
+          description: No permission to the requested data with the given credentials.
+        "404":
+          description: No data found for the given billing unit.
+        "500":
+          description: Technical error.
+        "501":
+          description: Operation is not supported by the MSC.
+  /billingunits/{mscnumber}/consumptions/periods/{period}:
+    get:
+      summary: Get consumption data for a billing unit and specific consumption period.
+      tags:
+        - eed-consumption
+      operationId: getConsumptionData
+      security:
+        - basicAuth: [ ]
+      parameters:
+        - $ref: '#/components/parameters/BillingUnitNumberMSC'
+        - $ref: '#/components/parameters/Period'
+      responses:
+        "200":
+          description: The consumption data overview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumptionData'
+        "401":
+          description: Authorization failure.
+        "403":
+          description: No permission to the requested data with the given credentials.
+        "404":
+          description: No data found for the given billing unit and/or period.
+        "500":
+          description: Technical error.
+        "501":
+          description: Operation is not supported by the MSC.
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+  parameters:
+    BillingUnitNumberMSC:
+      description: The identifier of the billing unit defined by the MSC to request consumption data for.
+      name: mscnumber
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/BillingUnitNumberMSC'
+    Year:
+      description: Request consumption summaries for this year only.
+      name: year
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/Year'
+    Period:
+      description: Identifier of a requested consumption period.
+      name: period
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/PeriodId'
+  schemas:
+    Benchmark:
+      description: Benchmark as required by the German HeizkostenV legislation for a specific service, period and billing unit.
+      type: object
+      properties:
+        service:
+          $ref: '#/components/schemas/Service'
+        unitofmeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        amount:
+          description: The benchmark amount.
+          type: number
+          example: '80.0'
+      required:
+        - service
+        - unitofmeasure
+        - amount
+    BillingUnitNumberMSC:
+      description: The identifier of a billing unit defined by the MSC.
+      type: string
+      minLength: 1
+      maxLength: 9
+      example: '123456789'
+    BillingUnitReference:
+      description: References a billing unit.
+      type: object
+      properties:
+        mscnumber:
+          $ref: '#/components/schemas/BillingUnitNumberMSC'
+        pmnumber:
+          description: The identifier of a billing unit defined by the PM.
+          type: string
+          minLength: 1
+          maxLength: 20
+          example: 'XY-12345-00'
+      required:
+        - mscnumber
+    Consumption:
+      description: Consumption for a specific service, period and billing unit.
+      type: object
+      properties:
+        service:
+          $ref: '#/components/schemas/Service'
+        unitofmeasure:
+          $ref: '#/components/schemas/UnitOfMeasure'
+        amount:
+          description: The actual consumption amount in case no errors are present, related to `unitofmeasure`.
+          type: number
+          example: '99.03'
+        converted:
+          description: |
+            True if the amount is converted from another unit of measure.
+
+            This applies e.g. when consumption measured in `HCU` is converted to `KWH`
+            as required by the German HeizkostenV regulations.
+          type: boolean
+          example: 'false'
+        estimated:
+          description: True if this is an estimated consumption.
+          type: boolean
+          example: 'true'
+        errors:
+          description: True if errors occurred and no consumption can be presented.
+          type: boolean
+          example: 'false'
+      required:
+        - service
+        - unitofmeasure
+        - converted
+        - estimated
+        - errors
+    ConsumptionData:
+      description: Consumption data for a billing unit and specific period.
+      type: object
+      properties:
+        billingunit:
+          $ref: '#/components/schemas/ConsumptionDataBillingUnit'
+      required:
+        - billingunit
+    ConsumptionDataBillingUnit:
+      description: Consumption data for a billing unit and specific period.
+      type: object
+      properties:
+        reference:
+          $ref: '#/components/schemas/BillingUnitReference'
+        period:
+          $ref: '#/components/schemas/PeriodId'
+        residentialunits:
+          description: List of consumption data on residential unit level.
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsumptionDataResidentialUnit'
+      required:
+        - reference
+        - period
+        - residentialunits
+    ConsumptionDataResidentialUnit:
+      description: Consumption data for a residential unit and specific period.
+      type: object
+      properties:
+        reference:
+          $ref: '#/components/schemas/ResidentialUnitReference'
+        consumptions:
+          description: Consumption values for different services and measurement units.
+          type: array
+          items:
+            $ref: '#/components/schemas/Consumption'
+        benchmarks:
+          description: Benchmarks for different services.
+          type: array
+          items:
+            $ref: '#/components/schemas/Benchmark'
+      required:
+        - reference
+        - consumptions
+    ConsumptionSummary:
+      description: Summary of available consumption data.
+      type: object
+      properties:
+        billingunit:
+          $ref: '#/components/schemas/ConsumptionSummaryBillingUnit'
+      required:
+        - billingunit
+    ConsumptionSummaryBillingUnit:
+      description: Summary of available consumption data for a billing unit.
+      type: object
+      properties:
+        reference:
+          $ref: '#/components/schemas/BillingUnitReference'
+        periods:
+          description: Overview of available consumption periods and their last update.
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsumptionSummaryPeriod'
+      required:
+        - reference
+        - periods
+    ConsumptionSummaryPeriod:
+      description: Describes available data for a consumption period.
+      type: object
+      properties:
+        period:
+          $ref: '#/components/schemas/PeriodId'
+        update:
+          description: The timestamp of the last data update for this period.
+          type: string
+          format: date-time
+      required:
+        - period
+        - update
+    PeriodId:
+      description: Identifier of a consumption period with year and month.
+      type: string
+      pattern: '^\d{4}-\d{2}$'
+      example: '2021-06'
+    ResidentialUnitReference:
+      description: References a residential unit.
+      type: object
+      properties:
+        mscnumber:
+          description: The identifier of a residential unit defined by the MSC.
+          type: string
+          minLength: 1
+          maxLength: 4
+          example: "0001"
+        pmnumber:
+          description: The identifier of a residential unit defined by the PM.
+          type: string
+          minLength: 1
+          maxLength: 20
+          example: 'XY-12345-00-R1'
+      required:
+        - mscnumber
+    Service:
+      description: |
+        The service a consumption value is related to:
+
+        * `HEATING`
+        * `HOT_WATER`
+        * `COOLING`
+        * `COLD_WATER`
+      type: string
+      enum: [ HEATING, HOT_WATER, COOLING, COLD_WATER ]
+    UnitOfMeasure:
+      description: |
+        The measured unit:
+
+        * `KWH`
+        * `HCU`: Units of heat cost allocators.
+        * `M3`
+      type: string
+      enum: [ KWH, HCU, M3 ]
+      example: 'KWH'
+    Year:
+      description: Data type for year information.
+      type: integer
+      minimum: 1900
+      maximum: 9999
