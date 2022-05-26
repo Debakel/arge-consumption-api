@@ -1,5 +1,5 @@
 # arge-consumption-mock
-Mocks the ARGE HaWeiKo [_consumption-data API_](https://arge-heiwako.de/veroeffentlichungen/datenaustausch/) (using [openapi-mock](https://github.com/muonsoft/openapi-mock)).
+Mocks ARGE HaWeiKo's [_consumption-data API_](https://arge-heiwako.de/veroeffentlichungen/datenaustausch/) (using [openapi-mock](https://github.com/muonsoft/openapi-mock)).
 
 ## Quick start
 With [Docker](https://docker.com) installed, run:
